@@ -160,8 +160,10 @@ while True:
                         elif command == "motd":
                             # Extract MOTD message from parts[3:]
                             if len(parts) < 4:
-                                responseMessage = "Error: No MOTD message specified. Usage: /66070077 <IP> motd <message>"
+                                # No message provided - read current MOTD
+                                responseMessage = ansible_final.motd(router_ip)
                             else:
+                                # Message provided - configure MOTD
                                 motd_message = " ".join(parts[3:])
                                 responseMessage = ansible_final.motd(router_ip, motd_message)
                         else:
