@@ -71,7 +71,7 @@ def showrun(router_ip):
 
 def motd(router_ip, motd_message=None):
     """
-    Configure or read MOTD banner on router using Netmiko with TextFSM
+    Configure or read MOTD banner on router using Ansible
     
     Args:
         router_ip: IP address of the router
@@ -80,130 +80,75 @@ def motd(router_ip, motd_message=None):
     Returns:
         Success message or current MOTD text
     """
-    device_params = {
-        "device_type": "cisco_ios",
-        "ip": router_ip,
-        "username": username,
-        "password": password,
-    }
-    
     try:
-        # Connect to router using Netmiko
-        with ConnectHandler(**device_params) as ssh:
+        # Build ansible-playbook command
+        cmd = ['ansible-playbook', 'playbook_motd.yaml', '-l', router_ip]
+        
+        # Add extra vars if configuring MOTD
+        if motd_message is not None:
+            # Properly quote the message for shell
+            # Replace single quotes with escaped version for YAML
+            safe_message = motd_message.replace("'", "''")
+            cmd.extend(['-e', f"motd_message='{safe_message}'"])
+        
+        # Run ansible-playbook command
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            cwd=os.path.dirname(os.path.abspath(__file__)) or '.'
+        )
+        
+        # Check if ansible-playbook executed successfully
+        if result.returncode == 0:
+            print(f"Ansible MOTD playbook executed successfully")
+            print(result.stdout)
             
-            # If motd_message is None, read current MOTD using Netmiko with TextFSM
             if motd_message is None:
-                # Get full running config
-                output = ssh.send_command("show running-config")
+                # Parse MOTD from Ansible output
+                output = result.stdout
                 
-                if not output or "banner motd" not in output:
-                    return "No MOTD banner configured"
-                
-                # TextFSM template for parsing banner motd
-                # This template extracts the MOTD message content
-                textfsm_template = r"""Value MOTD_MESSAGE (.*?)
-
-Start
-  ^banner\s+motd\s+\^C -> GetMessage
-
-GetMessage
-  ^\^C -> End
-  ^(.+) -> Continue.Record
-
-End
-"""
-                
-                try:
-                    # Create TextFSM object with the template
-                    fsm = TextFSM(io.StringIO(textfsm_template))
-                    
-                    # Parse the output using TextFSM
-                    result = fsm.ParseText(output)
-                    
-                    # Extract MOTD message from parsed result
-                    if result:
-                        motd_lines = [row[0] for row in result if row[0].strip()]
-                        if motd_lines:
-                            motd_text = '\n'.join(motd_lines).strip()
-                            print(f"TextFSM: Parsed MOTD successfully")
-                            return motd_text
-                    
-                    # Fallback: manual parsing if TextFSM fails
-                    print("TextFSM: Using fallback parsing method")
+                # Extract MOTD content from Ansible debug output
+                if "banner motd" in output:
                     lines = output.split('\n')
                     banner_content = []
-                    capture_banner = False
-                    delimiter_found = False
+                    capture = False
                     
                     for line in lines:
                         if 'banner motd' in line:
-                            # Check if single-line banner
-                            if '^C' in line:
-                                parts = line.split('^C')
-                                if len(parts) >= 3:  # banner motd ^C message ^C
-                                    # Single-line banner
-                                    motd_text = parts[1].strip()
-                                    return motd_text if motd_text else "No MOTD banner configured"
-                                else:
-                                    # Multi-line banner starts
-                                    capture_banner = True
-                                    continue
-                        elif capture_banner:
-                            if '^C' in line and line.strip() == '^C':
-                                # End of banner
-                                delimiter_found = True
-                                break
-                            else:
-                                # Banner content line
-                                banner_content.append(line)
-                    
-                    if delimiter_found and banner_content:
-                        motd_text = '\n'.join(banner_content).strip()
-                        return motd_text
-                    elif not delimiter_found and banner_content:
-                        motd_text = '\n'.join(banner_content).strip()
-                        return motd_text
-                    else:
-                        return "No MOTD banner configured"
-                        
-                except Exception as e:
-                    print(f"TextFSM parsing error: {e}, using fallback")
-                    # Fallback parsing
-                    lines = output.split('\n')
-                    banner_content = []
-                    capture_banner = False
-                    
-                    for line in lines:
-                        if 'banner motd' in line:
+                            # Check for single-line banner
                             if '^C' in line:
                                 parts = line.split('^C')
                                 if len(parts) >= 3:
                                     return parts[1].strip()
                                 else:
-                                    capture_banner = True
+                                    capture = True
                                     continue
-                        elif capture_banner:
+                        elif capture:
                             if '^C' in line and line.strip() == '^C':
                                 break
-                            else:
-                                banner_content.append(line)
+                            elif line.strip() and not line.strip().startswith('TASK') and not line.strip().startswith('PLAY'):
+                                banner_content.append(line.strip())
                     
                     if banner_content:
-                        return '\n'.join(banner_content).strip()
-                    return "No MOTD banner configured"
-            
-            # If motd_message is provided, configure MOTD
+                        # Clean up Ansible formatting
+                        motd_text = '\n'.join(banner_content)
+                        # Remove Ansible debug prefixes
+                        motd_text = motd_text.replace('"msg":', '').replace('"', '').strip()
+                        return motd_text if motd_text else "No MOTD banner configured"
+                
+                return "No MOTD banner configured"
             else:
-                # Configure MOTD banner
-                config_commands = [
-                    f'banner motd #{motd_message}#'
-                ]
-                
-                output = ssh.send_config_set(config_commands)
-                print(f"MOTD configuration output:\n{output}")
-                
+                # MOTD was configured successfully
                 return "Ok: success"
-                
+        else:
+            print(f"Ansible MOTD playbook failed with return code {result.returncode}")
+            print(f"Error output: {result.stderr}")
+            return f"Error: Ansible failed"
+            
+    except FileNotFoundError:
+        print("Error: ansible-playbook command not found. Make sure Ansible is installed.")
+        return "Error: Ansible not installed"
     except Exception as e:
         print(f"Error with MOTD: {e}")
         if motd_message is None:

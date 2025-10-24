@@ -1,0 +1,35 @@
+---
+- name: CONFIGURE OR READ MOTD BANNER
+  hosts: CSR1kv
+  gather_facts: false
+  connection: local
+
+  tasks:
+    - name: READ CURRENT MOTD
+      cisco.ios.ios_command:
+        commands:
+          - show running-config | section banner motd
+      register: motd_output
+      when: motd_message is not defined
+    
+    - name: DISPLAY CURRENT MOTD
+      debug:
+        msg: "{{ motd_output.stdout[0] }}"
+      when: motd_message is not defined
+    
+    - name: REMOVE OLD MOTD BANNER
+      cisco.ios.ios_config:
+        lines:
+          - no banner motd
+      when: motd_message is defined
+    
+    - name: CONFIGURE MOTD BANNER
+      cisco.ios.ios_config:
+        lines:
+          - "banner motd @{{ motd_message }}@"
+      when: motd_message is defined
+    
+    - name: CONFIRM MOTD CONFIGURATION
+      debug:
+        msg: "MOTD banner configured successfully"
+      when: motd_message is defined

@@ -160,10 +160,10 @@ while True:
                         elif command == "motd":
                             # Extract MOTD message from parts[3:]
                             if len(parts) < 4:
-                                # No message provided - read current MOTD
-                                responseMessage = ansible_final.motd(router_ip)
+                                # No message provided - read current MOTD using Netmiko + TextFSM
+                                responseMessage = netmiko_final.motd_read(router_ip)
                             else:
-                                # Message provided - configure MOTD
+                                # Message provided - configure MOTD using Ansible
                                 motd_message = " ".join(parts[3:])
                                 responseMessage = ansible_final.motd(router_ip, motd_message)
                         else:
