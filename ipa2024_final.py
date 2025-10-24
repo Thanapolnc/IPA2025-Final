@@ -120,52 +120,56 @@ while True:
                         # Commands that don't require method selection
                         if command in ["gigabit_status", "showrun", "motd"]:
                             print(f"Router IP: {router_ip}, Command: {command} (no method required)")
+                            
+                            # Execute commands immediately
+                            if command == "gigabit_status":
+                                responseMessage = netmiko_final.gigabit_status(router_ip)
+                            elif command == "showrun":
+                                responseMessage = ansible_final.showrun(router_ip)
+                            elif command == "motd":
+                                # Extract MOTD message from parts[3:]
+                                if len(parts) < 4:
+                                    # No message provided - read current MOTD using Netmiko + TextFSM
+                                    responseMessage = netmiko_final.motd_read(router_ip)
+                                else:
+                                    # Message provided - configure MOTD using Ansible
+                                    motd_message = " ".join(parts[3:])
+                                    responseMessage = ansible_final.motd(router_ip, motd_message)
+                        
                         # Commands that require method selection
-                        elif selected_method is None:
-                            responseMessage = "Error: No method specified"
-                        else:
-                            print(f"Router IP: {router_ip}, Command: {command}, Method: {selected_method}")
+                        elif command in ["create", "delete", "enable", "disable", "status"]:
+                            if selected_method is None:
+                                responseMessage = "Error: No method specified"
+                            else:
+                                print(f"Router IP: {router_ip}, Command: {command}, Method: {selected_method}")
 
 # 5. Complete the logic for each command
 
-                        if command == "create":
-                            if selected_method == "restconf":
-                                responseMessage = restconf_final.create(router_ip)
-                            else:  # netconf
-                                responseMessage = netconf_final.create(router_ip)
-                        elif command == "delete":
-                            if selected_method == "restconf":
-                                responseMessage = restconf_final.delete(router_ip)
-                            else:  # netconf
-                                responseMessage = netconf_final.delete(router_ip)
-                        elif command == "enable":
-                            if selected_method == "restconf":
-                                responseMessage = restconf_final.enable(router_ip)
-                            else:  # netconf
-                                responseMessage = netconf_final.enable(router_ip)
-                        elif command == "disable":
-                            if selected_method == "restconf":
-                                responseMessage = restconf_final.disable(router_ip)
-                            else:  # netconf
-                                responseMessage = netconf_final.disable(router_ip)
-                        elif command == "status":
-                            if selected_method == "restconf":
-                                responseMessage = restconf_final.status(router_ip)
-                            else:  # netconf
-                                responseMessage = netconf_final.status(router_ip)
-                        elif command == "gigabit_status":
-                            responseMessage = netmiko_final.gigabit_status(router_ip)
-                        elif command == "showrun":
-                            responseMessage = ansible_final.showrun(router_ip)
-                        elif command == "motd":
-                            # Extract MOTD message from parts[3:]
-                            if len(parts) < 4:
-                                # No message provided - read current MOTD using Netmiko + TextFSM
-                                responseMessage = netmiko_final.motd_read(router_ip)
-                            else:
-                                # Message provided - configure MOTD using Ansible
-                                motd_message = " ".join(parts[3:])
-                                responseMessage = ansible_final.motd(router_ip, motd_message)
+                                if command == "create":
+                                    if selected_method == "restconf":
+                                        responseMessage = restconf_final.create(router_ip)
+                                    else:  # netconf
+                                        responseMessage = netconf_final.create(router_ip)
+                                elif command == "delete":
+                                    if selected_method == "restconf":
+                                        responseMessage = restconf_final.delete(router_ip)
+                                    else:  # netconf
+                                        responseMessage = netconf_final.delete(router_ip)
+                                elif command == "enable":
+                                    if selected_method == "restconf":
+                                        responseMessage = restconf_final.enable(router_ip)
+                                    else:  # netconf
+                                        responseMessage = netconf_final.enable(router_ip)
+                                elif command == "disable":
+                                    if selected_method == "restconf":
+                                        responseMessage = restconf_final.disable(router_ip)
+                                    else:  # netconf
+                                        responseMessage = netconf_final.disable(router_ip)
+                                elif command == "status":
+                                    if selected_method == "restconf":
+                                        responseMessage = restconf_final.status(router_ip)
+                                    else:  # netconf
+                                        responseMessage = netconf_final.status(router_ip)
                         else:
                             responseMessage = "Error: Unknown command. Valid commands: create, delete, enable, disable, status, gigabit_status, showrun, motd"
             except Exception as e:
