@@ -12,6 +12,7 @@ import time
 import os
 from dotenv import load_dotenv
 import restconf_final
+# import netconf_final
 import netmiko_final
 import ansible_final
 from requests_toolbelt.multipart.encoder import MultipartEncoder
@@ -29,6 +30,9 @@ ACCESS_TOKEN = os.environ.get("WEBEX_ACCESS_TOKEN")
 
 # Defines a variable that will hold the roomId
 roomIdToGetMessages = os.environ.get("WEBEX_ROOM_ID")
+
+# Variable to store selected method (restconf or netconf)
+selected_method = None
 
 while True:
     try:
@@ -73,36 +77,85 @@ while True:
         print("Received message: " + message)
 
         # check if the text of the message starts with the magic character "/" followed by your studentID and a space and followed by a command name
-        #  e.g.  "/66070123 create"
+        #  e.g.  "/66070077 restconf" or "/66070077 10.0.15.61 create"
         if message.startswith("/66070077"):
 
-            # extract the command with error handling
+            # extract the command and IP with error handling
             try:
                 parts = message.split()
                 if len(parts) < 2:
-                    responseMessage = "Error: No command specified. Please use format: /66070077 <command>"
+                    responseMessage = "Error: No command specified. Please use format: /66070077 <method> or /66070077 <IP> <command>"
+                # Check if selecting method (restconf/netconf)
+                elif len(parts) == 2 and parts[1].lower() in ["restconf", "netconf"]:
+                    selected_method = parts[1].lower()
+                    responseMessage = f"Ok: {selected_method.capitalize()}"
+                    print(f"Method selected: {selected_method}")
+                elif len(parts) == 2:
+                    # Only one argument and it's not restconf/netconf
+                    # Check if method is selected first
+                    if selected_method is None:
+                        responseMessage = "Error: No method specified"
+                    # Check if it's an IP address
+                    elif parts[1].startswith("10.0.15."):
+                        responseMessage = "Error: No command found."
+                    else:
+                        responseMessage = "Error: No IP specified"
+                elif len(parts) < 3:
+                    # Two arguments but still less than 3
+                    if selected_method is None:
+                        responseMessage = "Error: No method specified"
+                    elif parts[1].startswith("10.0.15."):
+                        responseMessage = "Error: No command found."
+                    else:
+                        responseMessage = "Error: No IP specified"
                 else:
-                    command = parts[1]
-                    print(command)
+                    # Check if method is selected
+                    if selected_method is None:
+                        responseMessage = "Error: No method specified"
+                    else:
+                        router_ip = parts[1]
+                        command = parts[2]
+                        
+                        # Validate IP address (10.0.15.61-65)
+                        valid_ips = [f"10.0.15.{i}" for i in range(61, 66)]
+                        if router_ip not in valid_ips:
+                            responseMessage = f"Error: Invalid IP. Valid IPs are 10.0.15.61 to 10.0.15.65"
+                        else:
+                            print(f"Router IP: {router_ip}, Command: {command}, Method: {selected_method}")
 
 # 5. Complete the logic for each command
 
-                    if command == "create":
-                        responseMessage = restconf_final.create()
-                    elif command == "delete":
-                        responseMessage = restconf_final.delete()
-                    elif command == "enable":
-                        responseMessage = restconf_final.enable()
-                    elif command == "disable":
-                        responseMessage = restconf_final.disable()
-                    elif command == "status":
-                        responseMessage = restconf_final.status()
-                    elif command == "gigabit_status":
-                        responseMessage = netmiko_final.gigabit_status()
-                    elif command == "showrun":
-                        responseMessage = ansible_final.showrun()
-                    else:
-                        responseMessage = "Error: Unknown command. Valid commands: create, delete, enable, disable, status, gigabit_status, showrun"
+                            if command == "create":
+                                if selected_method == "restconf":
+                                    responseMessage = restconf_final.create(router_ip)
+                                else:  # netconf
+                                    responseMessage = netconf_final.create(router_ip)
+                            elif command == "delete":
+                                if selected_method == "restconf":
+                                    responseMessage = restconf_final.delete(router_ip)
+                                else:  # netconf
+                                    responseMessage = netconf_final.delete(router_ip)
+                            elif command == "enable":
+                                if selected_method == "restconf":
+                                    responseMessage = restconf_final.enable(router_ip)
+                                else:  # netconf
+                                    responseMessage = netconf_final.enable(router_ip)
+                            elif command == "disable":
+                                if selected_method == "restconf":
+                                    responseMessage = restconf_final.disable(router_ip)
+                                else:  # netconf
+                                    responseMessage = netconf_final.disable(router_ip)
+                            elif command == "status":
+                                if selected_method == "restconf":
+                                    responseMessage = restconf_final.status(router_ip)
+                                else:  # netconf
+                                    responseMessage = netconf_final.status(router_ip)
+                            elif command == "gigabit_status":
+                                responseMessage = netmiko_final.gigabit_status()
+                            elif command == "showrun":
+                                responseMessage = ansible_final.showrun()
+                            else:
+                                responseMessage = "Error: Unknown command. Valid commands: create, delete, enable, disable, status, gigabit_status, showrun"
             except Exception as e:
                 print(f"Error processing command: {e}")
                 responseMessage = "Error: Failed to process command"
