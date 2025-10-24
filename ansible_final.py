@@ -1,25 +1,25 @@
 from netmiko import ConnectHandler
 import os
 
-device_ip = "10.0.15.65"
 username = "admin"
 password = "cisco"
 
-device_params = {
-    "device_type": "cisco_ios",
-    "ip": device_ip,
-    "username": username,
-    "password": password,
-}
 
-def showrun():
+def showrun(router_ip):
+    device_params = {
+        "device_type": "cisco_ios",
+        "ip": router_ip,
+        "username": username,
+        "password": password,
+    }
+    
     try:
         # Connect to router using Netmiko
         with ConnectHandler(**device_params) as ssh:
             # Get hostname from router
             hostname_output = ssh.send_command("show running-config | include hostname")
             # Extract hostname (format: "hostname CSR1kv")
-            hostname = hostname_output.split()[-1] if hostname_output else device_ip
+            hostname = hostname_output.split()[-1] if hostname_output else router_ip
             
             # Send show running-config command
             output = ssh.send_command("show running-config")

@@ -156,7 +156,7 @@ while True:
                         elif command == "gigabit_status":
                             responseMessage = netmiko_final.gigabit_status(router_ip)
                         elif command == "showrun":
-                            responseMessage = ansible_final.showrun()
+                            responseMessage = ansible_final.showrun(router_ip)
                         else:
                             responseMessage = "Error: Unknown command. Valid commands: create, delete, enable, disable, status, gigabit_status, showrun"
             except Exception as e:
