@@ -12,7 +12,7 @@ import time
 import os
 from dotenv import load_dotenv
 import restconf_final
-# import netconf_final
+import netconf_final
 import netmiko_final
 import ansible_final
 from requests_toolbelt.multipart.encoder import MultipartEncoder
