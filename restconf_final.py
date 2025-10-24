@@ -25,7 +25,7 @@ def create(router_ip):
     # If interface exists (status 200), return error message
     if check_resp.status_code == 200:
         print("Interface already exists. Status Code: {}".format(check_resp.status_code))
-        return "Cannot create: Interface loopback 66070077"
+        return "Cannot create: Interface loopback 66070077 (checked by Restconf)"
     
     # If interface doesn't exist (status 404), proceed to create
     yangConfig = {
@@ -58,7 +58,7 @@ def create(router_ip):
         return "Interface loopback 66070077 is created successfully using Restconf"
     else:
         print('Error. Status Code: {}'.format(resp.status_code))
-        return "Cannot create: Interface loopback 66070077"
+        return "Cannot create: Interface loopback 66070077 (checked by Restconf)"
 
 
 def delete(router_ip):
@@ -76,7 +76,7 @@ def delete(router_ip):
         return "Interface loopback 66070077 is deleted successfully using Restconf"
     else:
         print('Error. Status Code: {}'.format(resp.status_code))
-        return "Cannot delete: Interface loopback 66070077"
+        return "Cannot delete: Interface loopback 66070077 (checked by Restconf)"
 
 
 def enable(router_ip):
@@ -103,7 +103,7 @@ def enable(router_ip):
         return "Interface loopback 66070077 is enabled successfully using Restconf"
     else:
         print('Error. Status Code: {}'.format(resp.status_code))
-        return "Cannot enable: Interface loopback 66070077"
+        return "Cannot enable: Interface loopback 66070077 (checked by Restconf)"
 
 
 def disable(router_ip):
@@ -130,7 +130,7 @@ def disable(router_ip):
         return "Interface loopback 66070077 is shutdowned successfully using Restconf"
     else:
         print('Error. Status Code: {}'.format(resp.status_code))
-        return "Cannot shutdown: Interface loopback 66070077"
+        return "Cannot shutdown: Interface loopback 66070077 (checked by Restconf)"
 
 
 def status(router_ip):

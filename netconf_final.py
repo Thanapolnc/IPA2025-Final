@@ -39,10 +39,10 @@ def create(router_ip):
         if '<ok/>' in xml_data:
             return "Interface loopback 66070077 is created successfully using Netconf"
         else:
-            return "Cannot create: Interface loopback 66070077"
+            return "Cannot create: Interface loopback 66070077 (checked by Netconf)"
     except Exception as e:
         print(f"Error: {e}")
-        return "Cannot create: Interface loopback 66070077"
+        return "Cannot create: Interface loopback 66070077 (checked by Netconf)"
 
 
 def delete(router_ip):
@@ -73,10 +73,10 @@ def delete(router_ip):
         if '<ok/>' in xml_data:
             return "Interface loopback 66070077 is deleted successfully using Netconf"
         else:
-            return "Cannot delete: Interface loopback 66070077"
+            return "Cannot delete: Interface loopback 66070077 (checked by Netconf)"
     except Exception as e:
         print(f"Error: {e}")
-        return "Cannot delete: Interface loopback 66070077"
+        return "Cannot delete: Interface loopback 66070077 (checked by Netconf)"
 
 
 def enable(router_ip):
@@ -108,10 +108,10 @@ def enable(router_ip):
         if '<ok/>' in xml_data:
             return "Interface loopback 66070077 is enabled successfully using Netconf"
         else:
-            return "Cannot enable: Interface loopback 66070077"
+            return "Cannot enable: Interface loopback 66070077 (checked by Netconf)"
     except Exception as e:
         print(f"Error: {e}")
-        return "Cannot enable: Interface loopback 66070077"
+        return "Cannot enable: Interface loopback 66070077 (checked by Netconf)"
 
 
 def disable(router_ip):
@@ -143,10 +143,10 @@ def disable(router_ip):
         if '<ok/>' in xml_data:
             return "Interface loopback 66070077 is shutdowned successfully using Netconf"
         else:
-            return "Cannot shutdown: Interface loopback 66070077"
+            return "Cannot shutdown: Interface loopback 66070077 (checked by Netconf)"
     except Exception as e:
         print(f"Error: {e}")
-        return "Cannot shutdown: Interface loopback 66070077"
+        return "Cannot shutdown: Interface loopback 66070077 (checked by Netconf)"
 
 
 def status(router_ip):
