@@ -118,7 +118,7 @@ while True:
                         responseMessage = f"Error: Invalid IP. Valid IPs are 10.0.15.61 to 10.0.15.65"
                     else:
                         # Commands that don't require method selection
-                        if command in ["gigabit_status", "showrun"]:
+                        if command in ["gigabit_status", "showrun", "motd"]:
                             print(f"Router IP: {router_ip}, Command: {command} (no method required)")
                         # Commands that require method selection
                         elif selected_method is None:
@@ -157,8 +157,15 @@ while True:
                             responseMessage = netmiko_final.gigabit_status(router_ip)
                         elif command == "showrun":
                             responseMessage = ansible_final.showrun(router_ip)
+                        elif command == "motd":
+                            # Extract MOTD message from parts[3:]
+                            if len(parts) < 4:
+                                responseMessage = "Error: No MOTD message specified. Usage: /66070077 <IP> motd <message>"
+                            else:
+                                motd_message = " ".join(parts[3:])
+                                responseMessage = ansible_final.motd(router_ip, motd_message)
                         else:
-                            responseMessage = "Error: Unknown command. Valid commands: create, delete, enable, disable, status, gigabit_status, showrun"
+                            responseMessage = "Error: Unknown command. Valid commands: create, delete, enable, disable, status, gigabit_status, showrun, motd"
             except Exception as e:
                 print(f"Error processing command: {e}")
                 responseMessage = "Error: Failed to process command"

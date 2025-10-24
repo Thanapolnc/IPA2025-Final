@@ -38,3 +38,39 @@ def showrun(router_ip):
     except Exception as e:
         print(f"Error: {e}")
         return ('Error: Ansible', None)
+
+
+def motd(router_ip, motd_message):
+    """
+    Configure MOTD banner on router using Netmiko
+    
+    Args:
+        router_ip: IP address of the router
+        motd_message: Message to set as MOTD banner
+    
+    Returns:
+        Success or error message
+    """
+    device_params = {
+        "device_type": "cisco_ios",
+        "ip": router_ip,
+        "username": username,
+        "password": password,
+    }
+    
+    try:
+        # Connect to router using Netmiko
+        with ConnectHandler(**device_params) as ssh:
+            # Configure MOTD banner
+            # Use # as delimiter for banner motd
+            config_commands = [
+                f'banner motd #{motd_message}#'
+            ]
+            
+            output = ssh.send_config_set(config_commands)
+            print(f"MOTD configuration output:\n{output}")
+            
+            return "Ok: success"
+    except Exception as e:
+        print(f"Error configuring MOTD: {e}")
+        return f"Error: Failed to configure MOTD on {router_ip}"
