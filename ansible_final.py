@@ -1,6 +1,8 @@
 from netmiko import ConnectHandler
 import os
 import io
+import subprocess
+import glob
 from textfsm import TextFSM
 
 username = "admin"
@@ -8,35 +10,60 @@ password = "cisco"
 
 
 def showrun(router_ip):
-    device_params = {
-        "device_type": "cisco_ios",
-        "ip": router_ip,
-        "username": username,
-        "password": password,
-    }
+    """
+    Use Ansible playbook to backup running-config from Cisco router
     
+    Args:
+        router_ip: IP address of the router
+    
+    Returns:
+        Tuple of (status, backup_file_path)
+    """
     try:
-        # Connect to router using Netmiko
-        with ConnectHandler(**device_params) as ssh:
-            # Get hostname from router
-            hostname_output = ssh.send_command("show running-config | include hostname")
-            # Extract hostname (format: "hostname CSR1kv")
-            hostname = hostname_output.split()[-1] if hostname_output else router_ip
+        # Create backups directory if not exists
+        if not os.path.exists("backups"):
+            os.makedirs("backups")
+        
+        # Run ansible-playbook command with limit to specific host
+        result = subprocess.run(
+            ['ansible-playbook', 'playbook.yaml', '-l', router_ip],
+            capture_output=True,
+            text=True,
+            cwd=os.path.dirname(os.path.abspath(__file__)) or '.'
+        )
+        
+        # Check if ansible-playbook executed successfully
+        if result.returncode == 0:
+            print(f"Ansible playbook executed successfully")
+            print(result.stdout)
             
-            # Send show running-config command
-            output = ssh.send_command("show running-config")
+            # Find the backup file created by Ansible
+            # Pattern: backups/show_run_66070077_*.txt
+            backup_pattern = "backups/show_run_66070077_*.txt"
+            backup_files = glob.glob(backup_pattern)
             
-            # Create backups directory if not exists
-            if not os.path.exists("backups"):
-                os.makedirs("backups")
+            if backup_files:
+                # Get the most recent backup file
+                backup_file = max(backup_files, key=os.path.getctime)
+                print(f"Successfully saved running-config to {backup_file}")
+                return ('ok', backup_file)
+            else:
+                # Fallback: check for specific router IP
+                backup_file = f"backups/show_run_66070077_{router_ip}.txt"
+                if os.path.exists(backup_file):
+                    print(f"Successfully saved running-config to {backup_file}")
+                    return ('ok', backup_file)
+                else:
+                    print("Error: Backup file not found after Ansible execution")
+                    return ('Error: Ansible - Backup file not created', None)
+        else:
+            print(f"Ansible playbook failed with return code {result.returncode}")
+            print(f"Error output: {result.stderr}")
+            return ('Error: Ansible', None)
             
-            # Save to file with format: show_run_[studentID]_[router_name].txt
-            backup_file = f"backups/show_run_66070077_{hostname}.txt"
-            with open(backup_file, "w") as f:
-                f.write(output)
-            
-            print(f"Successfully saved running-config to {backup_file}")
-            return ('ok', backup_file)
+    except FileNotFoundError:
+        print("Error: ansible-playbook command not found. Make sure Ansible is installed.")
+        return ('Error: Ansible not installed', None)
     except Exception as e:
         print(f"Error: {e}")
         return ('Error: Ansible', None)

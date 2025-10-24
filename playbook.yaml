@@ -5,12 +5,23 @@
   connection: local
 
   tasks:
+    - name: GET HOSTNAME FROM ROUTER
+      ios_command:
+        commands:
+          - show running-config | include hostname
+      register: hostname_output
+    
+    - name: EXTRACT HOSTNAME
+      set_fact:
+        router_hostname: "{{ hostname_output.stdout[0].split()[-1] }}"
+    
     - name: DISPLAYING THE RUNNING-CONFIG
       ios_command:
         commands:
           - show running-config
       register: config
+    
     - name: SAVE OUTPUT TO ./backups/
       copy:
         content: "{{ config.stdout[0] }}"
-        dest: "backups/show_run_66070077_{{ inventory_hostname }}.txt"
+        dest: "backups/show_run_66070077_{{ router_hostname }}.txt"
