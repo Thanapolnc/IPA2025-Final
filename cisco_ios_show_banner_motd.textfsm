@@ -1,0 +1,4 @@
+Value MOTD (.+)
+
+Start
+  ^\s*${MOTD} -> Record
